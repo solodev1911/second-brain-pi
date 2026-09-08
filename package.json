@@ -1,0 +1,60 @@
+{
+  "name": "second-brain",
+  "version": "0.1.0",
+  "description": "Explicitly approved, Graphify-backed project memory for Pi",
+  "type": "module",
+  "license": "UNLICENSED",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/solodev1911/second-brain-pi.git"
+  },
+  "homepage": "https://github.com/solodev1911/second-brain-pi#readme",
+  "bugs": {
+    "url": "https://github.com/solodev1911/second-brain-pi/issues"
+  },
+  "keywords": ["pi-package", "graphify", "second-brain"],
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "files": [
+    "extensions/",
+    "src/",
+    "skills/",
+    "scripts/",
+    "README.md",
+    "docs/compatibility.md",
+    "docs/implementation-progress.md",
+    "docs/verification.md"
+  ],
+  "pi": {
+    "extensions": ["./extensions/second-brain.ts"],
+    "skills": ["./skills/second-brain"]
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run tests/unit",
+    "test:contract": "vitest run tests/contract",
+    "test:rpc": "vitest run tests/rpc",
+    "test:live": "node --import tsx scripts/live-smoke.ts",
+    "check": "npm run typecheck && npm run test:unit && npm run test:contract && npm run test:rpc",
+    "pack:check": "node --import tsx scripts/pack-check.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "0.85.1",
+    "@earendil-works/pi-coding-agent": "0.85.1",
+    "@types/node": "22.19.19",
+    "tsx": "4.20.6",
+    "typebox": "1.3.7",
+    "typescript": "5.9.3",
+    "vitest": "4.1.9"
+  }
+}

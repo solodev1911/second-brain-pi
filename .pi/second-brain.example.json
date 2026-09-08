@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "graphify": {
+    "command": "graphify-mcp"
+  },
+  "startupRefresh": "off"
+}
