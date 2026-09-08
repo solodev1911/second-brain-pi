@@ -57,15 +57,12 @@ describe("Pi RPC end-to-end", () => {
     await mkdir(sessions);
     await writeFile(path.join(root, "src", "billing.py"), "def calculate_total(items):\n    return sum(x['price_cents'] for x in items)\n");
     const packageRoot = path.resolve(import.meta.dirname, "../..");
-    const engineRoot = process.env.SECOND_BRAIN_TEST_GRAPHIFY_ROOT ?? path.join(packageRoot, "graphify");
-    const python = process.env.SECOND_BRAIN_TEST_GRAPHIFY_PYTHON ?? path.join(engineRoot, ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
     const pi = process.env.SECOND_BRAIN_TEST_PI ?? (process.platform === "win32" ? "pi.cmd" : "pi");
     child = spawn(pi, [
       "--mode", "rpc", "--offline", "--approve", "--no-extensions", "--no-skills",
       "--extension", path.join(packageRoot, "tests", "fixtures", "fake-provider.ts"),
       "--extension", path.join(packageRoot, "extensions", "second-brain.ts"),
       "--provider", "second-brain-fake", "--model", "fixture", "--session-dir", sessions,
-      "--second-brain-graphify-command", python, "--second-brain-graphify-engine-root", engineRoot,
       "--second-brain-startup-refresh", "off",
     ], { cwd: root, env: { ...process.env, PI_CODING_AGENT_DIR: configDir, SECOND_BRAIN_STARTUP_REFRESH: "off" } });
     const stderr: string[] = [];

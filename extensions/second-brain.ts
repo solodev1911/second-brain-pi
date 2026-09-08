@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { resolveConfig, type ConfigInputs } from "../src/config.js";
 import { STATUS_KEY } from "../src/constants.js";
 import { groundingPrompt } from "../src/grounding.js";
@@ -10,6 +12,8 @@ import { statusReport } from "../src/status.js";
 import { selectCaptureSnapshot } from "../src/turn-selection.js";
 import type { ResolvedConfig } from "../src/types.js";
 import { SecondBrainError } from "../src/types.js";
+
+const BUNDLED_GRAPHIFY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "graphify");
 
 type RuntimeState = {
   generation: number;
@@ -63,6 +67,7 @@ export default function secondBrain(api: PiExtensionFactoryApi): void {
       const projectRoot = resolveProjectRoot({ cwd: ctx.cwd(), trusted: ctx.isProjectTrusted(), ...(explicitRoot ? { explicitRoot } : {}) });
       const configInputs: ConfigInputs = {
         projectRoot,
+        bundledEngineRoot: BUNDLED_GRAPHIFY_ROOT,
         environment: process.env,
         ...(flagCommand ? { flagCommand } : {}),
         ...(flagEngineRoot ? { flagEngineRoot } : {}),

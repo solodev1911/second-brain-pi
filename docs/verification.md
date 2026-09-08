@@ -3,7 +3,7 @@
 The automated gates cover:
 
 - Trusted-root discovery, explicit-root confinement, and symlink escape rejection.
-- Configuration precedence and the Python versus `graphify-mcp` argument profiles.
+- Configuration precedence, package-relative Graphify discovery, and the Python versus `graphify-mcp` argument profiles.
 - Exact distillation framing, one repair, deterministic fallback, limits, and credential redaction.
 - Latest-turn selection, A-success/B-failure rejection, pending tool calls, and forged/mismatched provenance.
 - YAML-safe memory serialization, hard-link publication, pre-publication revalidation, parallel exact dedupe, and cleanup.
@@ -23,9 +23,10 @@ The real-model acceptance step is intentionally separate. Set `SECOND_BRAIN_LIVE
 
 Latest local results on 2026-09-07:
 
-- `npm run check`: PASS — 19 unit tests, one expanded real Graphify stdio contract, and two Pi RPC scenarios pass. The second RPC scenario installs the package in a fixture, captures in one process, then retrieves the memory through `query_graph` in a fresh process.
+- `npm run check`: PASS — 21 unit tests, one expanded real Graphify stdio contract, and two Pi RPC scenarios pass. The first RPC scenario resolves the package-relative Graphify runtime without engine flags. The second installs the package in a fixture, captures in one process, then retrieves the memory through `query_graph` in a fresh process.
 - Fresh-session fixture evidence: `graphify-out/memory/query_20260907_164431_844_where_is_the_invoice_total_calculated.md`; the next process received both `calculate_total()` and that memory node, then emitted `RECALLED_FROM_GRAPH`.
 - `npm run pack:check`: PASS — 26 allowlisted files; tarball extraction/install, Pi extension import, skill discovery, and removal all pass.
+- Global activation: PASS — a Pi RPC session launched from `/Users/arbi/code/arbi_repos/keras-attention` loaded the user-scoped package, reported the engine source as `bundled`, and `/graph-refresh` produced 80 nodes and 101 edges without project-local Pi or Graphify configuration.
 - Project-local activation: PASS — Pi discovers `/remember`, `/memory-status`, `/graph-refresh`, and `skill:second-brain` from the checkout's `.pi/settings.json`; `/graph-refresh` reports 15,768 nodes and 29,467 edges.
 - Graphify changed-surface suite: PASS — 251 tests passed in the expanded serve/memory/reflect/CLI selection; a final direct rerun of the two new test modules passed 9/9 and Ruff passed with `--no-cache`.
 - Real-model acceptance: NOT RUN — `pi auth check --provider google --no-refresh --json` returned `credentials_not_configured`, and no other provider credential or API-key environment variable is present. Deterministic retrieval is verified; production-model recall quality is not claimed.

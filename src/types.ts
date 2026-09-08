@@ -4,7 +4,7 @@ export interface EngineConfig {
   command: string;
   args: string[];
   cwd?: string;
-  source: "flags" | "project-config" | "environment" | "path";
+  source: "flags" | "project-config" | "environment" | "bundled" | "path";
 }
 
 export interface SecondBrainProjectConfig {

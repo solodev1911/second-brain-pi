@@ -55,4 +55,40 @@ describe("configuration precedence", () => {
     expect(resolveConfig({ projectRoot: root, environment: { SECOND_BRAIN_STARTUP_REFRESH: "off" } }).startupRefresh).toBe("off");
     expect(resolveConfig({ projectRoot: root, flagStartupRefresh: "background", environment: { SECOND_BRAIN_STARTUP_REFRESH: "off" } }).startupRefresh).toBe("background");
   });
+
+  it("discovers the package-bundled Graphify runtime before falling back to PATH", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "second-brain-bundled-project-"));
+    const engineRoot = await mkdtemp(path.join(os.tmpdir(), "second-brain-bundled-engine-"));
+    const python = path.join(engineRoot, ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
+    await mkdir(path.dirname(python), { recursive: true });
+    await writeFile(python, "");
+
+    expect(resolveConfig({ projectRoot: root, bundledEngineRoot: engineRoot, environment: {} }).engine).toEqual({
+      command: python,
+      args: ["-m", "graphify.serve"],
+      cwd: engineRoot,
+      source: "bundled",
+    });
+
+    const missingRoot = path.join(engineRoot, "missing");
+    expect(resolveConfig({ projectRoot: root, bundledEngineRoot: missingRoot, environment: {} }).engine).toEqual({
+      command: "graphify-mcp",
+      args: [],
+      source: "path",
+    });
+  });
+
+  it("keeps explicit environment configuration ahead of the bundled runtime", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "second-brain-bundled-precedence-project-"));
+    const bundledRoot = await mkdtemp(path.join(os.tmpdir(), "second-brain-bundled-precedence-engine-"));
+    const bundledPython = path.join(bundledRoot, ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
+    await mkdir(path.dirname(bundledPython), { recursive: true });
+    await writeFile(bundledPython, "");
+
+    expect(resolveConfig({
+      projectRoot: root,
+      bundledEngineRoot: bundledRoot,
+      environment: { SECOND_BRAIN_GRAPHIFY_COMMAND: "/custom/graphify-mcp" },
+    }).engine).toEqual({ command: "/custom/graphify-mcp", args: [], source: "environment" });
+  });
 });

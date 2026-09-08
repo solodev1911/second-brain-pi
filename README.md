@@ -1,6 +1,6 @@
 # second-brain
 
-An explicit-save, project-local second brain for Pi 0.85.1 backed by Graphify v8. It adds native graph retrieval tools plus `/remember`, `/memory-status`, and `/graph-refresh`. Nothing is saved automatically: entering `/remember` is the approval boundary for the latest settled answer on the active session branch.
+An explicit-save, globally installable and repository-isolated second brain for Pi 0.85.1 backed by Graphify v8. It adds native graph retrieval tools plus `/remember`, `/memory-status`, and `/graph-refresh`. Nothing is saved automatically: entering `/remember` is the approval boundary for the latest settled answer on the active session branch.
 
 ## What it does
 
@@ -32,29 +32,35 @@ uv sync --frozen --extra mcp
 cd ..
 ```
 
-Keep this checkout in a stable location. Projects that use Second Brain refer to
-it as a local Pi package and use its Graphify runtime.
+Keep this checkout in a stable location. Pi loads the package globally from this
+checkout and automatically uses its patched Graphify runtime.
 
-## Install in a project
+## Install once for Pi
 
 Set `SECOND_BRAIN_CHECKOUT` to the absolute path of the cloned repository, then
-install the package from the project that should own its memory:
+install the package globally. Do not pass `-l`:
 
 ```sh
 SECOND_BRAIN_CHECKOUT=/absolute/path/to/second-brain
-cd /absolute/path/to/your/project
-pi install -l "$SECOND_BRAIN_CHECKOUT" --approve
+pi install "$SECOND_BRAIN_CHECKOUT" --approve
 ```
 
-Copy the portable example into the target project's local `.pi/` directory:
+Restart Pi inside any trusted Git repository. The extension detects that
+repository as the project root, while the Graphify process is discovered from
+`$SECOND_BRAIN_CHECKOUT/graphify/.venv`. Each repository keeps its own graph and
+memories under `graphify-out/`.
+
+No per-repository package installation, environment activation, or Graphify
+configuration is required. If a repository needs an explicit engine override,
+copy the portable example into that repository's `.pi/` directory:
 
 ```sh
 mkdir -p .pi
 cp "$SECOND_BRAIN_CHECKOUT/.pi/second-brain.example.json" .pi/second-brain.json
 ```
 
-The example runs `graphify-mcp` from `PATH`. Activate the bundled environment
-before starting Pi:
+The example deliberately runs `graphify-mcp` from `PATH`, overriding automatic
+runtime discovery. Activate the desired environment before starting Pi:
 
 ```sh
 source "$SECOND_BRAIN_CHECKOUT/graphify/.venv/bin/activate"
@@ -78,7 +84,7 @@ with absolute paths for this machine:
 ```
 
 Keep `.pi/second-brain.json` local because it contains machine-specific paths.
-The tracked `.pi/second-brain.example.json` is the shareable template.
+The tracked `.pi/second-brain.example.json` is an optional override template.
 
 You can also skip the project config and launch Pi with explicit flags:
 
@@ -133,6 +139,6 @@ See [compatibility](docs/compatibility.md) and [verification](docs/verification.
 
 ## Remove
 
-Run `pi remove -l "$SECOND_BRAIN_CHECKOUT" --approve` from the target project.
-Removal disables the package; it intentionally does not delete
+Run `pi remove "$SECOND_BRAIN_CHECKOUT" --approve`. Removal disables the global
+package; it intentionally does not delete any repository's
 `graphify-out/memory/` or rewrite existing memories.

@@ -9,6 +9,7 @@ export interface ConfigInputs {
   flagCommand?: string;
   flagEngineRoot?: string;
   flagStartupRefresh?: string;
+  bundledEngineRoot?: string;
   environment?: NodeJS.ProcessEnv;
 }
 
@@ -112,7 +113,11 @@ export function resolveConfig(inputs: ConfigInputs): ResolvedConfig {
     if (!command) throw new SecondBrainError("CONFIG_INVALID", "SECOND_BRAIN_GRAPHIFY_ENGINE_ROOT has no .venv Python; set SECOND_BRAIN_GRAPHIFY_COMMAND.");
     engine = profile(command, envRoot, "environment");
   } else {
-    engine = { command: "graphify-mcp", args: [], source: "path" };
+    const bundledRoot = inputs.bundledEngineRoot?.trim();
+    const bundledCommand = bundledRoot ? pythonForRoot(bundledRoot) : undefined;
+    engine = bundledRoot && bundledCommand
+      ? profile(bundledCommand, bundledRoot, "bundled")
+      : { command: "graphify-mcp", args: [], source: "path" };
   }
 
   const startupRefresh = startup(
