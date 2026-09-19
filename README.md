@@ -176,6 +176,11 @@ Uninstalling disables the extension but intentionally leaves every repository's 
 - macOS is the best-tested platform. Linux is tested in CI; Windows remains experimental during beta.
 - Compatibility is currently verified against Pi `0.85.1` and the bundled Graphify version documented in [Compatibility](docs/compatibility.md).
 
+## Research and writing
+
+- [Coding-agent memory and repository context](docs/articles/coding-agent-memory-landscape.md) — a source survey covering repository maps, code graphs, hosted coding memories, and general memory frameworks.
+- [What Should a Coding Agent Remember?](docs/articles/what-should-a-coding-agent-remember.md) — a non-promotional design-space article based on that research.
+
 ## Develop
 
 ```sh
