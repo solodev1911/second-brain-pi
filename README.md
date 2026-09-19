@@ -1,7 +1,6 @@
 # Second Brain for Pi
 
 [![CI](https://github.com/solodev1911/second-brain-pi/actions/workflows/ci.yml/badge.svg)](https://github.com/solodev1911/second-brain-pi/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/%40solodev1911%2Fsecond-brain?include_prereleases)](https://www.npmjs.com/package/@solodev1911/second-brain)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 Local, explicit-save, source-linked project memory for [Pi](https://github.com/earendil-works/pi).
@@ -18,22 +17,23 @@ Install these prerequisites once:
 - Node.js `22.19` or newer
 - [`uv`](https://docs.astral.sh/uv/getting-started/installation/)
 
-Install the current beta globally for Pi:
+Install the current public beta globally for Pi from GitHub:
+
+```sh
+pi install git:github.com/solodev1911/second-brain-pi
+```
+
+There is no per-repository installation and no separate Python or Graphify setup. On the first Pi launch, `uv` creates the package's isolated, locked Graphify environment. That first launch needs internet access and can take a few minutes; later launches reuse the environment.
+
+The npm package is prepared but not published yet. Once the beta appears on
+npm, the shorter versioned install will be:
 
 ```sh
 pi install npm:@solodev1911/second-brain@beta
 ```
 
-After the first stable release, the command without a dist-tag will install the
-stable version: `pi install npm:@solodev1911/second-brain`.
-
-There is no per-repository installation and no separate Python or Graphify setup. On the first Pi launch, `uv` creates the package's isolated, locked Graphify environment. That first launch needs internet access and can take a few minutes; later launches reuse the environment.
-
-Until the npm release is available, install the latest GitHub version with:
-
-```sh
-pi install git:github.com/solodev1911/second-brain-pi
-```
+After the first stable npm release, `pi install npm:@solodev1911/second-brain`
+will install the stable channel.
 
 ## Quick start
 
@@ -150,17 +150,21 @@ Command-line flags take precedence over project configuration, which takes prece
 
 ## Update or uninstall
 
-Update this package:
+Update a GitHub installation:
 
 ```sh
-pi update npm:@solodev1911/second-brain@beta
+pi update git:github.com/solodev1911/second-brain-pi
 ```
 
-Remove it:
+Remove a GitHub installation:
 
 ```sh
-pi remove npm:@solodev1911/second-brain
+pi remove git:github.com/solodev1911/second-brain-pi
 ```
+
+After the npm beta is published, use
+`pi update npm:@solodev1911/second-brain@beta` and
+`pi remove npm:@solodev1911/second-brain` instead.
 
 Uninstalling disables the extension but intentionally leaves every repository's `graphify-out/` data untouched. Delete those directories yourself if you also want to erase the graphs and memories.
 

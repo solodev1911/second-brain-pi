@@ -12,7 +12,10 @@ The diagnostic is designed to report project trust, runtime discovery, `uv`, Gra
 
 1. Exit Pi completely and start a new session.
 2. Confirm the package is registered with `pi list`.
-3. Update the beta with `pi update npm:@solodev1911/second-brain@beta`.
+3. Update the current GitHub beta with
+   `pi update git:github.com/solodev1911/second-brain-pi`. After the npm beta
+   is published, update it with
+   `pi update npm:@solodev1911/second-brain@beta` instead.
 4. Make sure you installed globally—do not use the `-l` flag.
 5. Start Pi inside a Git repository and approve that repository when prompted.
 
