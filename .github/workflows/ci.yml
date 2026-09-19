@@ -53,9 +53,12 @@ jobs:
       - name: Install Node.js dependencies
         run: npm ci --legacy-peer-deps --ignore-scripts
 
-      - name: Audit production Node.js dependencies
+      - name: Audit locked Node.js dependencies with OSV-Scanner
         if: matrix.os == 'ubuntu-latest'
-        run: npm audit --omit=dev --audit-level=high
+        uses: google/osv-scanner-action/osv-scanner-action@7f58dd6750d78fc29a900ba64b1a0f946f62fba4 # v2.6.0
+        with:
+          scan-args: |-
+            --lockfile=./package-lock.json
 
       - name: Audit locked Python runtime dependencies
         if: matrix.os == 'ubuntu-latest'
