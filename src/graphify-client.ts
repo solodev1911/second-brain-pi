@@ -35,10 +35,11 @@ export class GraphifyClient {
     transport.stderr?.on("data", (chunk: Buffer | string) => {
       this.stderr = `${this.stderr}${String(chunk)}`.slice(-RETAINED_STDERR_BYTES);
     });
-    const client = new Client({ name: "second-brain", version: "0.1.0" });
+    const client = new Client({ name: "second-brain", version: "0.1.0-beta.1" });
     try {
-      await client.connect(transport, { signal, timeout: CONNECTION_TIMEOUT_MS });
-      const listed = await client.listTools({}, { signal, timeout: CONNECTION_TIMEOUT_MS });
+      const connectionTimeout = this.config.connectionTimeoutMs ?? CONNECTION_TIMEOUT_MS;
+      await client.connect(transport, { signal, timeout: connectionTimeout });
+      const listed = await client.listTools({}, { signal, timeout: connectionTimeout });
       this.transport = transport;
       this.client = client;
       return new Set(listed.tools.map((tool) => tool.name));

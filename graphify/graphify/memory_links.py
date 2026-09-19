@@ -1,4 +1,4 @@
-"""Index explicit Second Brain query memories into an existing Graphify node-link graph."""
+"""Second Brain addition: index explicit memories into a Graphify node-link graph."""
 from __future__ import annotations
 
 import json

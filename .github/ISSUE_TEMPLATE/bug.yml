@@ -1,0 +1,96 @@
+name: Bug report
+description: Report a reproducible installation, runtime, graph, or memory problem
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Search existing issues first and do not include credentials, proprietary source, memory contents, or private filesystem paths.
+
+  - type: input
+    id: version
+    attributes:
+      label: Second Brain version
+      description: Run `pi list` or provide the installed npm/Git version.
+      placeholder: "0.1.0-beta.1"
+    validations:
+      required: true
+
+  - type: input
+    id: pi-version
+    attributes:
+      label: Pi version
+      placeholder: "0.85.1"
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, architecture, Node.js version, and uv version.
+      placeholder: "macOS arm64; Node 22.23.2; uv 0.x"
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Sanitized doctor output
+      description: Run `/second-brain-doctor`, then remove private paths and content. Never include secrets.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest sequence that reproduces the problem.
+      placeholder: |
+        1. Install ...
+        2. Start Pi in ...
+        3. Run ...
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include a short sanitized error message or log when useful.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: regression
+    attributes:
+      label: Did this work in an earlier version?
+      options:
+        - Not sure
+        - No, this is my first attempt
+        - Yes
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety checks
+      options:
+        - label: I searched existing issues.
+          required: true
+        - label: I removed credentials, private source, memory contents, and personal paths.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

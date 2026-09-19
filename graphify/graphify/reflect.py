@@ -1,4 +1,4 @@
-# Modified from Graphify v0.9.55 for second-brain memory metadata.
+# Modified from Graphify v0.9.64 for Second Brain memory metadata.
 """Deterministic "work memory" reflection over graphify-out/memory/.
 
 `graphify reflect` reads the Q&A memory docs that `graphify save-result` files back

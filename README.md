@@ -1,144 +1,198 @@
-# second-brain
+# Second Brain for Pi
 
-An explicit-save, globally installable and repository-isolated second brain for Pi 0.85.1 backed by Graphify v8. It adds native graph retrieval tools plus `/remember`, `/memory-status`, and `/graph-refresh`. Nothing is saved automatically: entering `/remember` is the approval boundary for the latest settled answer on the active session branch.
+[![CI](https://github.com/solodev1911/second-brain-pi/actions/workflows/ci.yml/badge.svg)](https://github.com/solodev1911/second-brain-pi/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/%40solodev1911%2Fsecond-brain?include_prereleases)](https://www.npmjs.com/package/@solodev1911/second-brain)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-## What it does
+Local, explicit-save, source-linked project memory for [Pi](https://github.com/earendil-works/pi).
 
-- Resolves one canonical trusted project root and never exposes root/executable fields to the model.
-- Connects to Graphify over owned stdio MCP, discovers capabilities, and activates only the tools the backend actually provides.
-- Adds `query_graph`, `refresh_graph`, `get_node`, `get_neighbors`, `get_community`, `god_nodes`, `graph_stats`, and `shortest_path` with bounded, closed schemas.
-- Distils the latest completed answer with Pi's active model, repairs malformed output once, and falls back deterministically without citations if the nested completion is unavailable.
-- Publishes Markdown under `graphify-out/memory/` using an exclusive hard-link transaction and exact question+answer deduplication.
-- Refreshes Graphify after publication, verifies the exact memory node and real `relation: memory` link count, and appends a non-context session receipt.
+Second Brain turns each trusted repository into a private knowledge graph. Pi can use that graph to understand architecture, trace relationships, and recall conclusions you explicitly saved in earlier sessions. The graph and memories stay inside the repository; no hosted database or vector store is required.
 
-No embeddings or vector database are introduced.
+> **Beta:** Second Brain is ready for early adopters. macOS is the primary verified platform, Linux is covered by CI, and Windows support is experimental. Please [report installation problems](https://github.com/solodev1911/second-brain-pi/issues/new?template=bug.yml).
 
-## Prerequisites
+## Install
 
-- Node.js 22.19 or newer (verified with 22.23.2).
-- Pi 0.85.1 (`@earendil-works/pi-coding-agent`).
-- [`uv`](https://docs.astral.sh/uv/) for Graphify's Python environment.
-- The bundled `graphify/` source, which includes the Second Brain compatibility patch.
+Install these prerequisites once:
 
-## Clone and bootstrap
+- [Pi](https://github.com/earendil-works/pi) `0.85.1` or newer
+- Node.js `22.19` or newer
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation/)
+
+Install the current beta globally for Pi:
 
 ```sh
-git clone https://github.com/solodev1911/second-brain-pi.git
-cd second-brain-pi
-npm install --legacy-peer-deps
-
-cd graphify
-uv sync --frozen --extra mcp
-cd ..
+pi install npm:@solodev1911/second-brain@beta
 ```
 
-Keep this checkout in a stable location. Pi loads the package globally from this
-checkout and automatically uses its patched Graphify runtime.
+After the first stable release, the command without a dist-tag will install the
+stable version: `pi install npm:@solodev1911/second-brain`.
 
-## Install once for Pi
+There is no per-repository installation and no separate Python or Graphify setup. On the first Pi launch, `uv` creates the package's isolated, locked Graphify environment. That first launch needs internet access and can take a few minutes; later launches reuse the environment.
 
-Set `SECOND_BRAIN_CHECKOUT` to the absolute path of the cloned repository, then
-install the package globally. Do not pass `-l`:
+Until the npm release is available, install the latest GitHub version with:
 
 ```sh
-SECOND_BRAIN_CHECKOUT=/absolute/path/to/second-brain
-pi install "$SECOND_BRAIN_CHECKOUT" --approve
+pi install git:github.com/solodev1911/second-brain-pi
 ```
 
-Restart Pi inside any trusted Git repository. The extension detects that
-repository as the project root, while the Graphify process is discovered from
-`$SECOND_BRAIN_CHECKOUT/graphify/.venv`. Each repository keeps its own graph and
-memories under `graphify-out/`.
+## Quick start
 
-No per-repository package installation, environment activation, or Graphify
-configuration is required. If a repository needs an explicit engine override,
-copy the portable example into that repository's `.pi/` directory:
+Open a repository and start Pi:
 
 ```sh
-mkdir -p .pi
-cp "$SECOND_BRAIN_CHECKOUT/.pi/second-brain.example.json" .pi/second-brain.json
-```
-
-The example deliberately runs `graphify-mcp` from `PATH`, overriding automatic
-runtime discovery. Activate the desired environment before starting Pi:
-
-```sh
-source "$SECOND_BRAIN_CHECKOUT/graphify/.venv/bin/activate"
+cd your-project
 pi --approve
 ```
 
-For a durable profile that does not require activation, edit the copied
-`.pi/second-brain.json` in the target project and replace its `graphify` object
-with absolute paths for this machine:
+Then run:
+
+```text
+/second-brain-doctor
+/graph-refresh
+```
+
+Ask Pi a question about the repository. When it gives an answer worth keeping, enter:
+
+```text
+/remember
+```
+
+Start a fresh Pi session and ask a related question. Pi can now retrieve the saved conclusion alongside the current source graph—and it is instructed to verify memories against current files before acting.
+
+## Why explicit-save memory?
+
+Agent memory is useful only when you can predict what becomes durable. Second Brain therefore has one save boundary: `/remember`.
+
+- It never saves every conversation automatically.
+- `/remember` captures only the latest completed answer on the active branch.
+- Running, failed, aborted, and tool-pending answers are rejected.
+- Exact duplicates reuse the existing memory record.
+- Saved conclusions link back to their source graph nodes when possible.
+- Current source wins when an old memory and the repository disagree.
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `/second-brain-doctor` | Check Pi trust, `uv`, the Graphify runtime, project paths, and graph health. |
+| `/graph-refresh` | Rebuild the current repository's graph and index saved memories. |
+| `/memory-status` | Show the resolved project, engine, graph, memory directory, and last capture. |
+| `/remember` | Save the latest settled answer after explicit approval. Accepts no arguments. |
+
+Second Brain also exposes bounded graph tools to Pi:
+
+| Tool | Purpose |
+|---|---|
+| `query_graph` | Search architecture, dependencies, data flow, and saved conclusions. |
+| `get_node` | Inspect an exact graph node. |
+| `get_neighbors` | Inspect a node's direct relationships. |
+| `get_community` | Explore a detected graph community. |
+| `god_nodes` | List highly connected concepts. |
+| `graph_stats` | Read graph size and confidence statistics. |
+| `shortest_path` | Find a bounded directed path between concepts. |
+| `refresh_graph` | Refresh the project graph programmatically. |
+
+## How it works
+
+```mermaid
+flowchart LR
+    A[Trusted repository] -->|local scan| B[Graphify]
+    B --> C[graphify-out/graph.json]
+    C --> D[Pi graph tools]
+    D --> E[Grounded answer]
+    E -->|explicit /remember| F[graphify-out/memory/*.md]
+    F -->|indexed on refresh| C
+```
+
+The Pi extension resolves the current trusted Git root, launches the bundled Graphify runtime over owned stdio MCP, and activates only the capabilities the runtime reports. Every repository has an isolated `graphify-out/` directory. Project-root and executable fields are injected by the host rather than exposed as model-controlled arguments.
+
+No embeddings or vector database are introduced.
+
+## Data and privacy
+
+Second Brain has no telemetry and does not provide a hosted service.
+
+- Source graph: `graphify-out/graph.json`
+- Human-readable graph: `graphify-out/graph.html`
+- Explicit memories: `graphify-out/memory/*.md`
+- Local cache and supporting output: `graphify-out/`
+
+Graph construction and storage are local. Pi may send ordinary prompts, selected source, graph results, and the answer being distilled to whichever model provider you configured in Pi. Second Brain never reads or manages that provider's credentials.
+
+`graphify-out/` can contain source-derived names, relationships, and saved conversation content. Keep it ignored for private work unless you deliberately want to commit it. To erase a repository's Second Brain data, close Pi and delete that repository's `graphify-out/` directory.
+
+Pi extensions run with your user account's permissions. Install only versions you trust, approve only repositories you trust, and review generated memories before sharing them. See [Security](SECURITY.md) and [Troubleshooting](docs/troubleshooting.md).
+
+## Configuration
+
+The default setup should require no configuration. Advanced overrides can be placed in `<project>/.pi/second-brain.json`:
 
 ```json
 {
   "schemaVersion": 1,
   "graphify": {
-    "command": "/absolute/path/to/second-brain/graphify/.venv/bin/python",
+    "command": "/path/to/python",
     "args": ["-m", "graphify.serve"],
-    "cwd": "/absolute/path/to/second-brain/graphify"
+    "cwd": "/path/to/graphify"
   },
   "startupRefresh": "off"
 }
 ```
 
-Keep `.pi/second-brain.json` local because it contains machine-specific paths.
-The tracked `.pi/second-brain.example.json` is an optional override template.
+Machine-specific configuration should remain uncommitted. The equivalent environment variables are:
 
-You can also skip the project config and launch Pi with explicit flags:
+- `SECOND_BRAIN_GRAPHIFY_COMMAND`
+- `SECOND_BRAIN_GRAPHIFY_ENGINE_ROOT`
+- `SECOND_BRAIN_PROJECT_ROOT`
+- `SECOND_BRAIN_STARTUP_REFRESH` (`background` or `off`)
+
+Command-line flags take precedence over project configuration, which takes precedence over environment variables and automatic package discovery. An explicit project root must remain inside Pi's trusted working directory.
+
+## Update or uninstall
+
+Update this package:
 
 ```sh
-pi --approve \
-  --second-brain-graphify-command "$SECOND_BRAIN_CHECKOUT/graphify/.venv/bin/python" \
-  --second-brain-graphify-engine-root "$SECOND_BRAIN_CHECKOUT/graphify"
+pi update npm:@solodev1911/second-brain@beta
 ```
 
-The matching environment variables are `SECOND_BRAIN_GRAPHIFY_COMMAND`, `SECOND_BRAIN_GRAPHIFY_ENGINE_ROOT`, `SECOND_BRAIN_PROJECT_ROOT`, and `SECOND_BRAIN_STARTUP_REFRESH`. The startup-refresh value is `background` (default) or `off`. An explicit project root must be an ancestor of Pi's trusted current directory.
-
-## Use
-
-1. Ask a repository question normally. For architecture and implementation-flow questions, the connected skill guides Pi to query Graphify first and verify current files.
-2. After Pi finishes the answer, enter `/remember` by itself.
-3. Use `/memory-status` for the resolved project/engine and last receipt.
-4. If a file was saved but indexing failed, use `/graph-refresh` to recover.
-
-`/remember` accepts no arguments and stores text only. It does not approve a pending action—even if the captured answer ends with “Should I implement this?”—and it refuses a running, failed, aborted, or tool-pending answer.
-
-## Development and verification
+Remove it:
 
 ```sh
-npm install --legacy-peer-deps
+pi remove npm:@solodev1911/second-brain
+```
+
+Uninstalling disables the extension but intentionally leaves every repository's `graphify-out/` data untouched. Delete those directories yourself if you also want to erase the graphs and memories.
+
+## Limitations
+
+- Large repositories can take time to index; use `/graph-refresh` deliberately if background refresh is disabled.
+- Notebook (`.ipynb`) and binary scientific-data understanding is currently limited.
+- Memory improves continuity but is not authoritative. The extension instructs Pi to verify current source.
+- macOS is the best-tested platform. Linux is tested in CI; Windows remains experimental during beta.
+- Compatibility is currently verified against Pi `0.85.1` and the bundled Graphify version documented in [Compatibility](docs/compatibility.md).
+
+## Develop
+
+```sh
+git clone https://github.com/solodev1911/second-brain-pi.git
+cd second-brain-pi
+npm ci --legacy-peer-deps
+
+cd graphify
+uv sync --frozen --extra mcp
+cd ..
+
 npm run check
 npm run pack:check
 ```
 
-`npm run check` is credential-free and includes strict type checking, unit tests,
-the real Graphify stdio contract, Pi RPC capture, and a two-process fresh-session
-recall test. `npm run pack:check` builds a tarball, installs that artifact into a
-clean temporary dependency tree, loads its extension and skill through Pi, then
-removes it.
+The real-model acceptance test is separate because it spends provider tokens. See [Verification](docs/verification.md) and [Contributing](CONTRIBUTING.md).
 
-The bounded real-model acceptance harness is separate because it spends provider
-tokens. Authenticate the provider in Pi, then identify it explicitly:
+## Project status and credits
 
-```sh
-export SECOND_BRAIN_LIVE_PROVIDER='<pi-provider-id>'
-export SECOND_BRAIN_LIVE_MODEL='<pi-model-id>'
-pi auth check --provider "$SECOND_BRAIN_LIVE_PROVIDER" --model "$SECOND_BRAIN_LIVE_MODEL" --json
-npm run test:live
-```
+Second Brain is an independent community project for Pi. It vendors a patched [Graphify](https://github.com/Graphify-Labs/graphify) runtime to support project-scoped refresh and explicit memory indexing. Graphify is not affiliated with or maintained by this project.
 
-The live harness creates and removes an isolated fixture. It stores three
-explanations, runs five fresh-session prompts (including two paraphrases and one
-unrelated negative case), changes the current billing implementation, verifies
-that source wins over stale memory, and saves a distinct corrected conclusion.
-It never prints credentials or model reasoning.
+See [Third-party notices](THIRD_PARTY_NOTICES.md) for attribution and [Changelog](CHANGELOG.md) for release history.
 
-See [compatibility](docs/compatibility.md) and [verification](docs/verification.md) for the frozen host/backend contract and test coverage.
-
-## Remove
-
-Run `pi remove "$SECOND_BRAIN_CHECKOUT" --approve`. Removal disables the global
-package; it intentionally does not delete any repository's
-`graphify-out/memory/` or rewrite existing memories.
+Licensed under the [Apache License 2.0](LICENSE).

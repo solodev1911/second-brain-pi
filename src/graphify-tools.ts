@@ -39,7 +39,7 @@ const SPECS: Record<(typeof ALL_GRAPH_TOOLS)[number], ToolSpec> = {
   query_graph: {
     schema: QuerySchema,
     label: "Query project graph",
-    description: "Search the current project's Graphify graph for architecture, dependencies, callers, data flow, or remembered conclusions.",
+    description: "Primary retrieval tool for repository questions. Call this before read, grep, find, ls, or bash to search the current project's architecture, dependencies, callers, data flow, and remembered conclusions.",
     defaults: { mode: "bfs", depth: 3, token_budget: 2_000 },
   },
   refresh_graph: {

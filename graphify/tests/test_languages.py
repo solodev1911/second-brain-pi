@@ -1317,6 +1317,110 @@ def test_php_constructor_property_promotion_contexts():
     assert ("Service", "string") not in _edge_labels(r, "references", "field")
 
 
+def test_php_indexes_inline_script_block(tmp_path):
+    """#2320: tree-sitter-php treats an inline <script> as opaque markup, so JS
+    declared there was previously entirely absent from the graph. Both
+    functions and the call edge between them must now be extracted."""
+    f = tmp_path / "page.php"
+    f.write_text(
+        "<?php\n"
+        "function phpSideHelper(): string { return 'i am php'; }\n"
+        "?>\n"
+        "<div id=\"app\"></div>\n"
+        "<script>\n"
+        "function inlineJsHelper(x){ return x * 2; }\n"
+        "function inlineJsCaller(y){ return inlineJsHelper(y) + 1; }\n"
+        "</script>\n"
+    )
+    r = extract_php(f)
+    labels = {n["label"] for n in r["nodes"]}
+    assert "phpSideHelper()" in labels
+    assert "inlineJsHelper()" in labels
+    assert "inlineJsCaller()" in labels
+    assert ("inlineJsCaller", "inlineJsHelper") in _edge_labels(r, "calls")
+
+
+def test_php_inline_script_line_numbers_match_source(tmp_path):
+    """The masking pass must preserve line numbers so a script-block symbol
+    points at its real line, not line 1 or an offset guess."""
+    f = tmp_path / "page.php"
+    f.write_text(
+        "<?php\n"
+        "// line 2\n"
+        "?>\n"
+        "<script>\n"
+        "function onLineFive() {}\n"
+        "</script>\n"
+    )
+    r = extract_php(f)
+    node = next(n for n in r["nodes"] if n["label"] == "onLineFive()")
+    assert node["source_location"] == "L5"
+
+
+def test_php_external_script_src_contributes_nothing(tmp_path):
+    """A <script src="..."> with no inline body must not crash or fabricate a
+    node — it masks to an empty region, which is valid (empty) JS. A sibling
+    inline block with real content must still be extracted."""
+    f = tmp_path / "page.php"
+    f.write_text(
+        "<?php\n"
+        "function helper(): string { return 'x'; }\n"
+        "?>\n"
+        '<script src="app.js"></script>\n'
+        "<script>\n"
+        "function realFn() { return 1; }\n"
+        "</script>\n"
+    )
+    r = extract_php(f)
+    assert "error" not in r
+    labels = {n["label"] for n in r["nodes"]}
+    assert "helper()" in labels
+    assert "realFn()" in labels
+
+
+def test_php_file_without_script_block_is_unaffected(tmp_path):
+    """A plain .php file with no <script> tag must not pay for or trigger the
+    JS pass at all — same node/edge shape as before this fix."""
+    f = tmp_path / "plain.php"
+    f.write_text("<?php\nfunction plainPhpHelper(): string { return 'also php'; }\n")
+    r = extract_php(f)
+    assert "error" not in r
+    labels = {n["label"] for n in r["nodes"]}
+    assert labels == {"plain.php", "plainPhpHelper()"}
+
+
+def test_php_js_name_collision_drops_the_dropped_js_nodes_edges(tmp_path):
+    """Follow up finding: when a JS symbol's id collides with an existing PHP
+    node (same name, one file), the JS node is correctly dropped in favor of
+    the PHP one, but its edges were still being merged in unconditionally —
+    an edge meant for the discarded JS symbol silently attached to the
+    unrelated retained PHP node sharing its id. A JS call to the colliding
+    name must vanish along with the node, not misattach to the PHP function
+    of the same name (which the inline script never actually calls)."""
+    f = tmp_path / "page.php"
+    f.write_text(
+        "<?php\n"
+        "function sharedName() { return 1; }\n"
+        "?>\n"
+        "<script>\n"
+        "function sharedName(x) { return x; }\n"
+        "function jsCaller(y) { return sharedName(y); }\n"
+        "</script>\n"
+    )
+    r = extract_php(f)
+    labels = {n["label"] for n in r["nodes"]}
+    # Exactly one sharedName node survives (the PHP one) -- no duplicate.
+    assert labels == {"page.php", "sharedName()", "jsCaller()"}
+    # The JS call to the colliding name must not appear as a calls edge at
+    # all (misattaching it to the PHP node would be a wrong edge, not a
+    # missing one).
+    assert _edge_labels(r, "calls") == set()
+    # The file's own contains edges for the surviving, non colliding JS node
+    # must still be present -- the fix for the collision must not also drop
+    # unrelated JS edges sourced from the shared file node.
+    assert ("page.php", "jsCaller") in _edge_labels(r, "contains")
+
+
 # ── Swift ────────────────────────────────────────────────────────────────────
 
 def test_swift_no_error():

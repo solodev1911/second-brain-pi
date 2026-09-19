@@ -72,7 +72,9 @@ describe("Pi RPC end-to-end", () => {
     rpc.send({ id: "commands", type: "get_commands" });
     const commands = await rpc.waitFor((event) => event.type === "response" && event.id === "commands");
     expect(commands.success, stderr.join("")).toBe(true);
-    expect(commands.data.commands.map((command: Event) => command.name)).toEqual(expect.arrayContaining(["remember", "memory-status", "graph-refresh"]));
+    expect(commands.data.commands.map((command: Event) => command.name)).toEqual(expect.arrayContaining([
+      "remember", "memory-status", "second-brain-doctor", "graph-refresh",
+    ]));
 
     rpc.send({ id: "question", type: "prompt", message: "Where is the invoice total calculated?" });
     await rpc.waitFor((event) => event.type === "response" && event.id === "question");

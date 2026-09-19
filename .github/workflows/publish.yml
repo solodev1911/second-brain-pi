@@ -1,0 +1,205 @@
+name: Publish npm package
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify release artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      dist-tag: ${{ steps.metadata.outputs.dist-tag }}
+      package-name: ${{ steps.metadata.outputs.package-name }}
+      package-version: ${{ steps.metadata.outputs.package-version }}
+      tarball: ${{ steps.pack.outputs.tarball }}
+
+    steps:
+      - name: Check out the released tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Require the release commit to be on main
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "The released tag must point to a commit contained in main." >&2
+            exit 1
+          fi
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Use an npm CLI with trusted-publishing support
+        run: npm install --global npm@12.0.2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.5"
+          enable-cache: false
+          cache-dependency-glob: graphify/uv.lock
+
+      - name: Install Graphify runtime
+        working-directory: graphify
+        run: uv sync --locked --extra mcp --no-dev
+
+      - name: Install Node.js dependencies
+        run: npm ci --legacy-peer-deps --ignore-scripts
+
+      - name: Validate release metadata
+        id: metadata
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+          const fail = (message) => {
+            console.error(`Release safety check failed: ${message}`);
+            process.exit(1);
+          };
+
+          if (pkg.name !== "@solodev1911/second-brain") {
+            fail(`expected package name @solodev1911/second-brain, received ${pkg.name}`);
+          }
+          if (pkg.private !== false) fail("package.json must explicitly set private to false");
+          if (pkg.license !== "Apache-2.0") fail("package.json license must be Apache-2.0");
+          if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(pkg.version)) {
+            fail(`package version is not a supported SemVer value: ${pkg.version}`);
+          }
+          if (process.env.RELEASE_TAG !== `v${pkg.version}`) {
+            fail(`release tag ${process.env.RELEASE_TAG} must equal v${pkg.version}`);
+          }
+
+          const prereleaseVersion = pkg.version.includes("-");
+          const prereleaseRelease = process.env.RELEASE_PRERELEASE === "true";
+          if (prereleaseVersion !== prereleaseRelease) {
+            fail("the GitHub pre-release checkbox must match whether package.json has a pre-release version");
+          }
+
+          const repository = typeof pkg.repository === "string" ? pkg.repository : pkg.repository?.url;
+          if (repository !== "git+https://github.com/solodev1911/second-brain-pi.git") {
+            fail("package.json repository must exactly match git+https://github.com/solodev1911/second-brain-pi.git");
+          }
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, [
+            `package-name=${pkg.name}`,
+            `package-version=${pkg.version}`,
+            `dist-tag=${prereleaseVersion ? "beta" : "latest"}`,
+            "",
+          ].join("\n"));
+          NODE
+
+      - name: Refuse to overwrite an existing npm version
+        env:
+          PACKAGE_NAME: ${{ steps.metadata.outputs.package-name }}
+          PACKAGE_VERSION: ${{ steps.metadata.outputs.package-version }}
+        shell: bash
+        run: |
+          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version >/dev/null 2>&1; then
+            echo "${PACKAGE_NAME}@${PACKAGE_VERSION} already exists on npm." >&2
+            exit 1
+          fi
+
+      - name: Audit production Node.js dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Audit locked Python runtime dependencies
+        working-directory: graphify
+        run: |
+          uv export --quiet --frozen --no-dev --extra mcp --format requirements-txt --no-hashes --output-file "$RUNNER_TEMP/second-brain-runtime-requirements.txt"
+          uvx pip-audit --requirement "$RUNNER_TEMP/second-brain-runtime-requirements.txt" --progress-spinner off
+
+      - name: Run release checks
+        run: npm run check
+
+      - name: Verify install and removal from a packed artifact
+        run: npm run pack:check
+
+      - name: Build publication tarball
+        id: pack
+        shell: bash
+        run: |
+          mkdir -p dist
+          npm pack --pack-destination dist
+          tarball="$(find dist -maxdepth 1 -type f -name '*.tgz' -print -quit)"
+          if [ -z "$tarball" ]; then
+            echo "npm pack did not produce a tarball." >&2
+            exit 1
+          fi
+          tar -tzf "$tarball" > dist/tarball-contents.txt
+          for required in \
+            package/package.json \
+            package/LICENSE \
+            package/NOTICE \
+            package/THIRD_PARTY_NOTICES.md \
+            package/extensions/second-brain.ts \
+            package/skills/second-brain/SKILL.md \
+            package/graphify/pyproject.toml \
+            package/graphify/uv.lock \
+            package/graphify/graphify/serve.py; do
+            if ! grep -Fqx "$required" dist/tarball-contents.txt; then
+              echo "Publication tarball is missing $required." >&2
+              exit 1
+            fi
+          done
+          echo "tarball=$(basename "$tarball")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload verified tarball
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-package
+          path: dist/${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish to npm
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Set up Node.js 22 for npm
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Use an npm CLI with trusted-publishing support
+        run: npm install --global npm@12.0.2
+
+      - name: Download verified tarball
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: npm-package
+          path: dist
+
+      - name: Publish with provenance
+        env:
+          DIST_TAG: ${{ needs.verify.outputs.dist-tag }}
+          TARBALL: ${{ needs.verify.outputs.tarball }}
+        run: npm publish "dist/${TARBALL}" --access public --provenance --tag "${DIST_TAG}"

@@ -1,37 +1,38 @@
-# Implementation progress
+# Release readiness
 
-Updated: 2026-09-07
+This document tracks the engineering gates for the next public release. A checked box means the behavior exists in the release branch; publishing still requires the automated and manual release checklist in [Verification](verification.md).
 
-| Phase | Status | Evidence |
-|---|---|---|
-| 0 — compatibility | PASS | Pi 0.85.1 host APIs and Graphify 0.9.55 stdio MCP exercised with real processes. |
-| 1 — package and lifecycle | PASS | Project-local package loads; trusted root/config, status, teardown, and unavailable states are tested. |
-| 2 — graph retrieval | PASS | Eight native tools discovered and exercised through the real MCP server; project root is host-injected. |
-| 3 — command isolation | PASS | Active-branch selection, failed-later-turn rejection, pending tools, and explicit `/remember` semantics are tested. |
-| 4 — durable capture | PASS | Distillation/repair/fallback, redaction, atomic publication, conservative dedupe, locking, and Graphify parsing are tested. |
-| 5 — refresh and recovery | PASS | Post-publication refresh, per-memory verification, audit receipt, zero-link memory, failure reporting, cancellation, and recovery are tested. |
-| 6 — end to end | PASS / NOT RUN | Deterministic two-process fresh-session recall passes. Real-model acceptance is NOT RUN because Pi has no configured provider credentials. |
-| 7 — handoff | PASS on macOS | Packed tarball installs into a clean tree, loads extension and skill in Pi, and removes cleanly. Windows is NOT RUN. |
+## Core behavior
 
-## Decisions and deviations
+- [x] One global Pi package works across trusted repositories.
+- [x] Each repository receives an isolated `graphify-out/` graph and memory directory.
+- [x] Graphify runs over owned stdio MCP with host-controlled roots and executable configuration.
+- [x] Eight bounded graph tools are registered only when supported by the backend.
+- [x] `/remember` is explicit, branch-aware, deduplicated, and atomic.
+- [x] Saved memory nodes are refreshed and verified against Graphify.
+- [x] Fresh Pi sessions can retrieve a previously saved conclusion.
+- [x] Package installs can provision the locked Graphify environment through `uv`.
+- [x] `/second-brain-doctor` diagnoses the public installation path.
 
-- MCP SDK is pinned to 1.30.0 instead of the plan's starting suggestion of 1.25.1 because the older version produced high-severity audit findings.
-- `startupRefresh` is `off` in the local trial configuration so launching Pi does not unexpectedly rebuild a 15k-node workspace; `/graph-refresh` is verified explicitly.
-- The real target project contains a sibling directory named `graphify`. The refresh subprocess therefore runs from the trusted Graphify package root, never from the indexed project, preventing Python package shadowing.
-- No real-project test memory is seeded. The real memory directory remains absent until the user explicitly enters `/remember` after an answer.
+## Public-release foundation
 
-## Commands run for the final deterministic gate
+- [x] Apache-2.0 project license and third-party notices.
+- [x] Public README, security policy, contribution guide, code of conduct, changelog, and support guide.
+- [x] Structured bug and feature issue forms plus a pull-request template.
+- [x] Credential-free TypeScript, Graphify contract, Pi RPC, and packed-artifact gates.
+- [x] Release automation is designed for npm provenance and trusted publishing.
+- [ ] Complete external beta installs on every advertised platform.
+- [ ] Promote Windows from experimental after clean installation and recall testing.
+- [ ] Add notebook-aware indexing.
 
-```sh
-npm run check
-npm run pack:check
+## Non-goals for the initial beta
 
-cd graphify
-.venv/bin/python -m pytest -q tests/test_memory_links.py tests/test_serve_refresh.py
-.venv/bin/ruff check --no-cache graphify/cli.py graphify/reflect.py graphify/serve.py graphify/memory_links.py tests/test_memory_links.py tests/test_serve_refresh.py
-git diff --check
-```
+- Automatic persistence at turn end.
+- A hosted memory service or synchronization account.
+- Embeddings or a vector database.
+- Indexing every Graphify-supported optional media/database format.
+- Treating remembered conclusions as more authoritative than current source.
 
-## Current blocker
+## Release policy
 
-`npm run test:live` requires `SECOND_BRAIN_LIVE_PROVIDER` and `SECOND_BRAIN_LIVE_MODEL` naming a provider/model already authenticated in Pi. The current Google provider readiness check returned `credentials_not_configured`; no provider secrets were read or logged.
+The project uses semantic versioning. During `0.x`, minor releases can refine interfaces, but migrations and breaking behavior must be called out in `CHANGELOG.md`. A release must not claim a platform or installation path that has not passed the corresponding clean-environment test.

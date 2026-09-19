@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { CONFIG_SCHEMA_VERSION } from "./constants.js";
+import { bundledUvProfile, hasBundledGraphifySource } from "./runtime.js";
 import type { EngineConfig, ResolvedConfig, SecondBrainProjectConfig, StartupRefresh } from "./types.js";
 import { SecondBrainError } from "./types.js";
 
@@ -115,9 +116,13 @@ export function resolveConfig(inputs: ConfigInputs): ResolvedConfig {
   } else {
     const bundledRoot = inputs.bundledEngineRoot?.trim();
     const bundledCommand = bundledRoot ? pythonForRoot(bundledRoot) : undefined;
-    engine = bundledRoot && bundledCommand
-      ? profile(bundledCommand, bundledRoot, "bundled")
-      : { command: "graphify-mcp", args: [], source: "path" };
+    if (bundledRoot && bundledCommand) {
+      engine = profile(bundledCommand, bundledRoot, "bundled");
+    } else if (bundledRoot && hasBundledGraphifySource(bundledRoot)) {
+      engine = bundledUvProfile(bundledRoot);
+    } else {
+      engine = { command: "graphify-mcp", args: [], source: "path" };
+    }
   }
 
   const startupRefresh = startup(

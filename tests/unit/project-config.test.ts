@@ -78,6 +78,26 @@ describe("configuration precedence", () => {
     });
   });
 
+  it("uses uv with the locked bundled source when no bundled virtualenv exists", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "second-brain-uv-project-"));
+    const engineRoot = await mkdtemp(path.join(os.tmpdir(), "second-brain-uv-engine-"));
+    await mkdir(path.join(engineRoot, "graphify"));
+    await writeFile(path.join(engineRoot, "pyproject.toml"), "[project]\nname = 'fixture'\n");
+    await writeFile(path.join(engineRoot, "uv.lock"), "version = 1\n");
+    await writeFile(path.join(engineRoot, "graphify", "serve.py"), "");
+
+    expect(resolveConfig({ projectRoot: root, bundledEngineRoot: engineRoot, environment: {} }).engine).toEqual({
+      command: "uv",
+      args: [
+        "run", "--frozen", "--no-dev", "--extra", "mcp", "--project", engineRoot,
+        "python", "-m", "graphify.serve",
+      ],
+      cwd: engineRoot,
+      source: "bundled-uv",
+      connectionTimeoutMs: 300_000,
+    });
+  });
+
   it("keeps explicit environment configuration ahead of the bundled runtime", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "second-brain-bundled-precedence-project-"));
     const bundledRoot = await mkdtemp(path.join(os.tmpdir(), "second-brain-bundled-precedence-engine-"));

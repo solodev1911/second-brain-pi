@@ -94,7 +94,7 @@ describe("fresh Pi session recall", () => {
     const commands = await rpc1.waitFor((event) => event.type === "response" && event.id === "commands");
     expect(commands.success, firstErrors.join("")).toBe(true);
     expect(commands.data.commands.map((command: Event) => command.name)).toEqual(expect.arrayContaining([
-      "remember", "memory-status", "graph-refresh", "skill:second-brain",
+      "remember", "memory-status", "second-brain-doctor", "graph-refresh", "skill:second-brain",
     ]));
 
     rpc1.send({ id: "question", type: "prompt", message: "Where is the invoice total calculated?" });

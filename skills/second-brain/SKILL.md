@@ -9,7 +9,7 @@ Use this skill only when the system prompt contains `SECOND_BRAIN_ACTIVE`. If it
 
 For questions about repository architecture, dependencies, callers, data flow, implementation locations, remembered conclusions, or change impact:
 
-1. Call `query_graph` before broad filesystem exploration. Query both exact project vocabulary and the underlying concept.
+1. `query_graph` must be the first tool call. Do not call `read`, `grep`, `find`, `ls`, `bash`, or another broad source tool first. Query both exact project vocabulary and the underlying concept.
 2. If results are weak, refine once using labels observed in the first result. Do not invent graph vocabulary.
 3. Use `get_node` or another focused graph tool to disambiguate and establish an exact source ID.
 4. Read a returned memory Markdown file when its full conclusion matters.

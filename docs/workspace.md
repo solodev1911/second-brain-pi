@@ -1,50 +1,52 @@
-# second-brain workspace
+# Development workspace
 
-This directory is the development checkout for Second Brain.
+This repository contains a Pi extension, its Graphify runtime, and the tests that bind them together.
 
-Current state: the package is enabled locally for this directory, Pi reports the
-integration as connected, and the generated project graph is present. The last
-verified refresh contained 15,768 nodes and 29,467 edges.
+## Layout
 
-## Components
+- `extensions/second-brain.ts` — Pi extension entry point and command registration.
+- `src/` — trusted-root resolution, configuration, Graphify MCP client, capture pipeline, and Pi host adapter.
+- `skills/second-brain/` — packaged Pi guidance for graph-first retrieval and source verification.
+- `tests/` — unit, Graphify contract, Pi RPC, and fresh-session recall coverage.
+- `scripts/` — packed-artifact and bounded live-model acceptance harnesses.
+- `graphify/` — vendored Graphify runtime with narrow refresh and memory-indexing patches.
+- `.pi/second-brain.example.json` — optional advanced configuration template.
+- `graphify-out/` — generated graph data for this checkout; ignored by Git.
 
-- `extensions/second-brain.ts` — Pi extension entry point.
-- `src/`, `skills/second-brain/`, `tests/`, and `scripts/` — Graphify MCP client, capture pipeline, packaged skill, tests, and development tooling.
-- `graphify/` — Graphify v8 checkout with the Second Brain memory-indexing and `refresh_graph` compatibility patch.
-- `.pi/settings.json` — project-local Pi package registration.
-- `.pi/second-brain.example.json` — tracked, portable Graphify configuration template.
-- `.pi/second-brain.json` — untracked, machine-local Graphify configuration.
-- `graphify-out/` — generated graph for this workspace.
+The checkout's own graph and memories are development artifacts, not package content or release evidence.
 
-## Run it
-
-After completing the bootstrap and local configuration steps in the root
-`README.md`, start Pi from the checkout root:
+## Bootstrap
 
 ```sh
-pi --approve
+npm ci --legacy-peer-deps
+
+cd graphify
+uv sync --frozen --extra mcp
+cd ..
 ```
 
-Inside Pi:
+Install this checkout in a disposable Pi configuration when testing local changes. Do not replace your normal global package unless that is the behavior under test.
 
-1. Run `/memory-status`; it should report `connected` and `Graph: present`.
-2. Ask a repository question.
-3. Run `/remember` after the completed answer to approve saving it.
-4. Start a fresh Pi session and ask a related question to exercise recall.
+## Exercise the extension
 
-The memory directory is intentionally absent until the first explicit `/remember` command. Test memories are never seeded into this real project.
+Start Pi from a trusted fixture repository and run:
 
-The only unexecuted release gate is the bounded real-model acceptance run because
-Pi currently has no configured provider credentials. Credential-free capture and
-fresh-session recall are covered by a two-process RPC test.
+```text
+/second-brain-doctor
+/graph-refresh
+/memory-status
+```
 
-## Verify the implementation
+Ask a repository question, wait for the answer to settle, and enter `/remember`. Start a fresh session before testing recall so session context cannot masquerade as memory retrieval.
 
-Run these commands from the checkout root:
+## Verify changes
+
+Run:
 
 ```sh
 npm run check
-
-cd graphify
-.venv/bin/python -m pytest tests/test_memory_links.py -q
+npm run pack:check
+git diff --check
 ```
+
+See [Verification](verification.md) for Graphify and real-model acceptance commands. Changes that affect package contents, runtime discovery, or first launch must be validated from the packed tarball in a clean environment.

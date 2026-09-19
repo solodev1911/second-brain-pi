@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveConfig, type ConfigInputs } from "../src/config.js";
 import { STATUS_KEY } from "../src/constants.js";
+import { doctorReport } from "../src/doctor.js";
 import { groundingPrompt } from "../src/grounding.js";
 import { GraphifyService } from "../src/graphify-service.js";
 import { desiredActiveTools, registerGraphifyTools } from "../src/graphify-tools.js";
@@ -130,6 +131,24 @@ export default function secondBrain(api: PiExtensionFactoryApi): void {
         ...(state.service ? { service: state.service } : {}),
         ...(state.error ? { error: state.error } : {}),
       }), state.service?.isUsable() && !requiredCollision() ? "info" : "warning");
+    },
+  );
+
+  host.registerCommand(
+    "second-brain-doctor",
+    "Check Second Brain installation, project access, runtime, and Graphify connectivity",
+    async (args, ctx) => {
+      if (args.trim()) { ctx.notify("Usage: /second-brain-doctor", "warning"); return; }
+      await state.connection?.catch(() => undefined);
+      const report = await doctorReport({
+        bundledEngineRoot: BUNDLED_GRAPHIFY_ROOT,
+        collisions: registration.collisions,
+        ...(state.projectRoot ? { projectRoot: state.projectRoot } : {}),
+        ...(state.config ? { config: state.config } : {}),
+        ...(state.service ? { service: state.service } : {}),
+        ...(state.error ? { error: state.error } : {}),
+      });
+      ctx.notify(report, state.service?.isUsable() && !requiredCollision() ? "info" : "warning");
     },
   );
 

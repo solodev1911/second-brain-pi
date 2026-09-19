@@ -35,7 +35,9 @@ export async function statusReport(input: {
   const safeArgs = input.config.engine.args.every((arg) => ["-m", "graphify.serve"].includes(arg))
     ? input.config.engine.args.join(" ")
     : input.config.engine.args.length ? `[${input.config.engine.args.length} configured argument(s) hidden]` : "";
-  const engine = `${input.config.engine.command}${safeArgs ? ` ${safeArgs}` : ""}`;
+  const engine = input.config.engine.source === "bundled-uv"
+    ? "uv (locked bundled Graphify)"
+    : `${input.config.engine.command}${safeArgs ? ` ${safeArgs}` : ""}`;
   const requiredCollision = input.collisions.some((name) => name === "query_graph" || name === "refresh_graph");
   const state = input.service?.isUsable() && !requiredCollision ? "connected" : "not connected";
   const lines = [
@@ -50,6 +52,10 @@ export async function statusReport(input: {
   if (receipt) lines.push(`Last capture: ${receipt.savedFile} (${receipt.refreshStatus}${receipt.memoryLinks === undefined ? "" : `, ${receipt.memoryLinks} link(s)`})`);
   if (input.error) lines.push(`Diagnostic: ${truncateCodePoints(input.error, 1_000)}`);
   if (requiredCollision) lines.push("Next: disable or rename the conflicting required tool, then restart Pi.");
-  else if (!input.service?.isUsable()) lines.push(`Next: verify locally with: ${engine} --help`);
+  else if (!input.service?.isUsable()) {
+    lines.push(input.config.engine.source === "bundled-uv"
+      ? "Next: run /second-brain-doctor. First setup requires uv on PATH and internet access to download the locked runtime."
+      : `Next: verify locally with: ${engine} --help`);
+  }
   return lines.join("\n");
 }

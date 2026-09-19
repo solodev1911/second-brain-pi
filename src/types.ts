@@ -4,7 +4,9 @@ export interface EngineConfig {
   command: string;
   args: string[];
   cwd?: string;
-  source: "flags" | "project-config" | "environment" | "bundled" | "path";
+  source: "flags" | "project-config" | "environment" | "bundled" | "bundled-uv" | "path";
+  /** Allows the first uv run to create its locked environment before MCP connects. */
+  connectionTimeoutMs?: number;
 }
 
 export interface SecondBrainProjectConfig {

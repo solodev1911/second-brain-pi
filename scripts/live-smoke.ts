@@ -89,7 +89,7 @@ async function ready(instance: ReturnType<typeof start>, id: string): Promise<vo
   const response = await instance.rpc.waitFor((event) => event.type === "response" && event.id === id, 30_000, after);
   if (!response.success) throw new Error(`Pi command discovery failed: ${JSON.stringify(response)}\n${instance.stderr.join("")}`);
   const names = new Set(response.data.commands.map((entry: { name: string }) => entry.name));
-  for (const required of ["remember", "memory-status", "graph-refresh", "skill:second-brain"]) {
+  for (const required of ["remember", "memory-status", "second-brain-doctor", "graph-refresh", "skill:second-brain"]) {
     if (!names.has(required)) throw new Error(`Installed package did not expose ${required}`);
   }
 }
