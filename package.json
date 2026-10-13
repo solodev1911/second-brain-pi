@@ -70,7 +70,7 @@
     "pack:check": "node --import tsx scripts/pack-check.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.30.0"
+    "@modelcontextprotocol/sdk": "1.32.1"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
